@@ -1,7 +1,6 @@
 import express from "express";
 import { config } from "dotenv";
 import cors from "cors"; 
-
 import connectDB from "./config/db.js";
 
 
@@ -9,6 +8,8 @@ import userRouter from "./routes/userRoutes.js";
 import bookingRoutes from "./routes/bookingRoutes.js";
 import facultyRoutes from "./routes/facultyRoutes.js"; 
 import userRoutes from "./routes/userRoutes.js"; // ✅ teammate’s part
+import notificationRoutes from "./routes/notificationRoutes.js";
+
 
 
 config();
@@ -25,6 +26,7 @@ app.use(cors());
 app.use("/api/faculty", facultyRoutes);
 app.use("/api/users", userRouter);
 app.use("/api/bookings", bookingRoutes);  // booking/cancel endpoints
+app.use("/api/notifications", notificationRoutes);
 
 app.get("/", (req, res) => res.send("✅ PanelHub Server is running successfully."));
 // Server Start
