@@ -4,7 +4,6 @@ import Booking from "../models/Booking.js";
 import nodemailer from "nodemailer";
 import "dotenv/config.js";
 
-
 const NOTIFICATIONS_ENABLED = process.env.NOTIFICATIONS_ENABLED === "true";
 console.log("🔍 Notifications Enabled:", process.env.NOTIFICATIONS_ENABLED);
 
@@ -37,7 +36,9 @@ const transporter = createTransporter();
 
 const sendEmails = async ({ toEmails = [], subject, text, html }) => {
   if (!NOTIFICATIONS_ENABLED) {
-    console.log("🟡 Notifications disabled by NOTIFICATIONS_ENABLED=false — skipping send");
+    console.log(
+      "🟡 Notifications disabled by NOTIFICATIONS_ENABLED=false — skipping send"
+    );
     return false;
   }
   if (!transporter) {
@@ -46,19 +47,19 @@ const sendEmails = async ({ toEmails = [], subject, text, html }) => {
   }
 
   (async () => {
-  try {
-    const testTransporter = nodemailer.createTransport({
-      host: process.env.SMTP_HOST,
-      port: process.env.SMTP_PORT,
-      secure: process.env.SMTP_SECURE === "true",
-      auth: { user: process.env.SMTP_USER, pass: process.env.SMTP_PASS },
-    });
-    const result = await testTransporter.verify();
-    console.log("✅ SMTP connection verified:", result);
-  } catch (err) {
-    console.error("❌ SMTP verification failed:", err);
-  }
-})();
+    try {
+      const testTransporter = nodemailer.createTransport({
+        host: process.env.SMTP_HOST,
+        port: process.env.SMTP_PORT,
+        secure: process.env.SMTP_SECURE === "true",
+        auth: { user: process.env.SMTP_USER, pass: process.env.SMTP_PASS },
+      });
+      const result = await testTransporter.verify();
+      console.log("✅ SMTP connection verified:", result);
+    } catch (err) {
+      console.error("❌ SMTP verification failed:", err);
+    }
+  })();
 
   try {
     // send a single email with multiple recipients in BCC/To as needed
@@ -82,7 +83,9 @@ export const createNotification = async (req, res) => {
     const { recipient, event, slotId } = req.body;
 
     if (!recipient || !event) {
-      return res.status(400).json({ message: "recipient and event are required" });
+      return res
+        .status(400)
+        .json({ message: "recipient and event are required" });
     }
 
     // Save notification document
@@ -123,9 +126,28 @@ export const createNotification = async (req, res) => {
     let html = `<p>Event: <strong>${event}</strong></p>`;
 
     if (booking) {
-      const dateStr = booking.date ? new Date(booking.date).toLocaleString() : "";
-      html += `<p>Booking Date: ${dateStr}</p><p>StartTime: ${booking.startTime || booking.time}</p>`;
-      text += `\nBooking Date: ${dateStr}\nStartTime: ${booking.startTime || booking.time}`;
+      let dateStr = "";
+      if (booking?.date) {
+        try {
+          const d = new Date(booking.date);
+          dateStr = isNaN(d.getTime())
+            ? booking.date // fallback if already a readable string
+            : d.toLocaleDateString("en-IN", {
+                year: "numeric",
+                month: "short",
+                day: "numeric",
+              });
+        } catch {
+          dateStr = booking.date;
+        }
+      }
+
+      html += `<p>Booking Date: ${dateStr || "N/A"}</p><p>StartTime: ${
+        booking.startTime || booking.time || "N/A"
+      }</p>`;
+      text += `\nBooking Date: ${dateStr || "N/A"}\nStartTime: ${
+        booking.startTime || booking.time || "N/A"
+      }`;
     }
 
     // Add more context for specific events
@@ -152,17 +174,23 @@ export const createNotification = async (req, res) => {
     if (emails.length > 0 && NOTIFICATIONS_ENABLED) {
       sent = await sendEmails({ toEmails: emails, subject, text, html });
     } else {
-      console.log("ℹ️ No recipient emails found or notifications disabled — saved only");
+      console.log(
+        "ℹ️ No recipient emails found or notifications disabled — saved only"
+      );
     }
 
     // update sentStatus on doc
     saved.sentStatus = !!sent;
     await saved.save();
 
-    return res.status(201).json({ message: "Notification saved", notification: saved });
+    return res
+      .status(201)
+      .json({ message: "Notification saved", notification: saved });
   } catch (err) {
     console.error("❌ createNotification error:", err);
-    return res.status(500).json({ message: "Server error", error: err.message });
+    return res
+      .status(500)
+      .json({ message: "Server error", error: err.message });
   }
 };
 
